@@ -45,3 +45,13 @@
 -- password varchar(255) 
 -- role enum('student','admin') 
 -- created_at timestamp
+
+-- -- Table: examsTable: exams
+-- Columns:
+-- exam_id int AI PK 
+-- module_id int 
+-- exam_name varchar(100) 
+-- exam_date date 
+-- exam_type enum('Midterm','Final','Quiz','Assignment') 
+-- created_at timestamp 
+-- updated_at timestamp
