@@ -47,3 +47,21 @@ export interface AuthResponse {
   user: User;
   token: string;
 }
+
+export interface Exam {
+  exam_id: string;
+  module_id: string;
+  exam_name: string;
+  exam_date: string;
+  exam_type: 'midterm' | 'final' | 'quiz' | 'assignment';
+  created_at?: string;
+  updated_at?: string;
+  module?: Module;
+}
+
+export interface CreateExamData {
+  module_id: string;
+  exam_name: string;
+  exam_date: string;
+  exam_type: 'midterm' | 'final' | 'quiz' | 'assignment';
+}

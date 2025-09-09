@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthResponse, LoginCredentials, Module, Note, RegisterData, User } from '../types/index';
+import type { AuthResponse, LoginCredentials, Module, Note, RegisterData, User, Exam, CreateExamData } from '../types/index';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -121,6 +121,37 @@ export const noteService = {
   }): Promise<Note[]> => {
     const response = await api.get('/notes/filter', { params: filters });
     return response.data;
+  },
+};
+
+export const examService = {
+  getAllExams: async (): Promise<Exam[]> => {
+    const response = await api.get('/exams');
+    return response.data;
+  },
+  
+  getExamsByModule: async (moduleId: string): Promise<Exam[]> => {
+    const response = await api.get(`/exams/module/${moduleId}`);
+    return response.data;
+  },
+  
+  getExamById: async (id: string): Promise<Exam> => {
+    const response = await api.get(`/exams/${id}`);
+    return response.data;
+  },
+  
+  createExam: async (examData: CreateExamData): Promise<Exam> => {
+    const response = await api.post('/exams', examData);
+    return response.data;
+  },
+  
+  updateExam: async (id: string, examData: Partial<CreateExamData>): Promise<Exam> => {
+    const response = await api.put(`/exams/${id}`, examData);
+    return response.data;
+  },
+  
+  deleteExam: async (id: string): Promise<void> => {
+    await api.delete(`/exams/${id}`);
   },
 };
 
