@@ -65,3 +65,28 @@ export interface CreateExamData {
   exam_date: string;
   exam_type: 'midterm' | 'final' | 'quiz' | 'assignment';
 }
+
+export interface AssignmentDocument {
+  doc_id: number;
+  doc_name: string;
+  file_path: string;
+  file_type: string;
+  uploaded_at: string;
+}
+
+export interface Assignment {
+  assignment_id: number;
+  module_id: number;
+  title: string;
+  deadline: string;
+  status: 'Ongoing' | 'Complete';
+  module_name?: string;
+  module_code?: string;
+  documents: AssignmentDocument[];
+}
+
+export interface CreateAssignmentData {
+  module_id: number;
+  title: string;
+  deadline: string;
+}

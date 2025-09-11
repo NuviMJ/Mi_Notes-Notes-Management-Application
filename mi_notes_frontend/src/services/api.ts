@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthResponse, LoginCredentials, Module, Note, RegisterData, User, Exam, CreateExamData } from '../types/index';
+import type { AuthResponse, LoginCredentials, Module, Note, RegisterData, User, Exam, CreateExamData, Assignment, CreateAssignmentData } from '../types/index';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -152,6 +152,52 @@ export const examService = {
   
   deleteExam: async (id: string): Promise<void> => {
     await api.delete(`/exams/${id}`);
+  },
+};
+
+export const assignmentService = {
+  getAllAssignments: async (): Promise<Assignment[]> => {
+    const response = await api.get('/assignments');
+    return response.data;
+  },
+  
+  getAssignmentsByModule: async (moduleId: string): Promise<Assignment[]> => {
+    const response = await api.get(`/assignments/module/${moduleId}`);
+    return response.data;
+  },
+  
+  getAssignmentById: async (id: string): Promise<Assignment> => {
+    const response = await api.get(`/assignments/${id}`);
+    return response.data;
+  },
+  
+  createAssignment: async (assignmentData: CreateAssignmentData): Promise<Assignment> => {
+    const response = await api.post('/assignments', assignmentData);
+    return response.data;
+  },
+  
+  updateAssignment: async (id: number, assignmentData: Partial<CreateAssignmentData & { status?: 'Ongoing' | 'Complete' }>): Promise<void> => {
+    await api.put(`/assignments/${id}`, assignmentData);
+  },
+  
+  deleteAssignment: async (id: number): Promise<void> => {
+    await api.delete(`/assignments/${id}`);
+  },
+  
+  uploadDocument: async (assignmentId: number, file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append('document', file);
+    
+    const response = await api.post(`/assignments/${assignmentId}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+  
+  deleteDocument: async (assignmentId: number, docId: number): Promise<void> => {
+    await api.delete(`/assignments/${assignmentId}/document/${docId}`);
   },
 };
 

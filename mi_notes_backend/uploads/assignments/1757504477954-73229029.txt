@@ -1,0 +1,217 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-dark text-gray-100 min-h-screen antialiased;
+  }
+  
+  * {
+    @apply transition-colors duration-200;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-900;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary-600 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-500;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-primary text-white px-6 py-3 rounded-lg font-semibold
+           transform transition-all duration-300 hover:scale-105 hover:shadow-glow
+           active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply bg-dark-700 text-gray-100 px-6 py-3 rounded-lg font-semibold
+           border border-primary-600 transform transition-all duration-300
+           hover:bg-primary-600 hover:scale-105 hover:shadow-glow active:scale-95;
+  }
+  
+  .card {
+    @apply bg-dark-800/50 backdrop-blur-md rounded-xl p-6 
+           border border-dark-700 shadow-card transition-all duration-300
+           hover:shadow-glow hover:border-primary-600;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg
+           text-gray-100 placeholder-gray-500 transition-all duration-300
+           focus:outline-none focus:border-primary-500 focus:ring-2 
+           focus:ring-primary-500/20;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-accent-blue to-accent-indigo 
+           bg-clip-text text-transparent;
+  }
+  
+  .glass-effect {
+    @apply bg-dark-800/30 backdrop-blur-lg border border-dark-700/50;
+  }
+  
+  .hover-lift {
+    @apply transform transition-transform duration-300 hover:-translate-y-2;
+  }
+  
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(96, 165, 250, 0.1),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+}
+
+@layer utilities {
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+  
+  .animation-delay-800 {
+    animation-delay: 800ms;
+  }
+  
+  .animation-delay-1000 {
+    animation-delay: 1000ms;
+  }
+  
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  .transform-3d {
+    transform-style: preserve-3d;
+  }
+  
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-accent-blue bg-clip-text text-transparent;
+  }
+  
+  .border-gradient {
+    border-image: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%) 1;
+  }
+}
+
+/* Glow animation for interactive elements */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(96, 165, 250, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(96, 165, 250, 0.8), 0 0 60px rgba(96, 165, 250, 0.4);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth page transitions */
+.page-transition {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading spinner */
+.spinner {
+  border: 3px solid rgba(96, 165, 250, 0.2);
+  border-radius: 50%;
+  border-top: 3px solid #60a5fa;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Floating animation for icons */
+@keyframes float-rotate {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(5deg);
+  }
+  75% {
+    transform: translateY(5px) rotate(-5deg);
+  }
+}
+
+.animate-float-rotate {
+  animation: float-rotate 4s ease-in-out infinite;
+}
+
+/* Card hover effects */
+.card-hover-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hover-effect::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.1) 0%, transparent 70%);
+  transform: scale(0);
+  transition: transform 0.5s ease-out;
+}
+
+.card-hover-effect:hover::before {
+  transform: scale(1);
+}
+
+/* Neon text effect */
+.neon-text {
+  text-shadow: 
+    0 0 10px rgba(96, 165, 250, 0.8),
+    0 0 20px rgba(96, 165, 250, 0.6),
+    0 0 30px rgba(96, 165, 250, 0.4),
+    0 0 40px rgba(96, 165, 250, 0.2);
+}
