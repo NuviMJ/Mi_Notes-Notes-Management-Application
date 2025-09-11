@@ -90,3 +90,41 @@ export interface CreateAssignmentData {
   title: string;
   deadline: string;
 }
+
+export interface DashboardStats {
+  totalNotes: number;
+  totalUsers: number;
+  totalModules: number;
+  totalSemesters: number;
+  totalAssignments: number;
+  ongoingAssignments: number;
+  completedAssignments: number;
+  totalExams: number;
+  notesBySemester: Array<{
+    semester_name: string;
+    semester_id: number;
+    notes_count: number;
+  }>;
+  topModules: Array<{
+    module_name: string;
+    code: string;
+    note_count: number;
+  }>;
+  recentActivity: Array<{
+    title: string;
+    upload_date: string;
+    module_name: string;
+    uploaded_by: string;
+  }>;
+  assignmentStatus: Array<{
+    status: string;
+    count: number;
+  }>;
+}
+
+export interface SemesterStats {
+  moduleCount: number;
+  noteCount: number;
+  assignmentCount: number;
+  examCount: number;
+}

@@ -1,27 +1,34 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { moduleService } from "../services/api";
-import type { Module } from "../types/index";
+import { moduleService, dashboardService } from "../services/api";
+import type { Module, DashboardStats } from "../types/index";
 import {
   BookOpen,
   FileText,
   GraduationCap,
-  Users,
   Sparkles,
   TrendingUp,
+  Calendar,
+  Activity,
 } from "lucide-react";
 import graduationHatImg from "../assets/graduation-hat.jpg";
 import ExamCalendar from "../widgets/ExamCalendar";
 import AssignmentsWidget from "../widgets/AssignmentsWidget";
+import StudyTimer from "../widgets/StudyTimer";
 
 const Home: React.FC = () => {
   const [modules, setModules] = useState<Module[]>([]);
   const [selectedSemester, setSelectedSemester] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
+    null
+  );
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     loadModules(selectedSemester);
+    loadDashboardStats();
   }, [selectedSemester]);
 
   const loadModules = async (semester: number) => {
@@ -39,58 +46,105 @@ const Home: React.FC = () => {
     }
   };
 
+  const loadDashboardStats = async () => {
+    try {
+      setStatsLoading(true);
+      const stats = await dashboardService.getStats();
+      setDashboardStats(stats);
+    } catch (err) {
+      console.error("Failed to load dashboard stats:", err);
+      // Keep null state for stats to show fallback
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 
-  const stats = [
-    {
-      icon: FileText,
-      value: "1000+",
-      label: "Study Notes",
-      color: "text-palette-600",
-    },
-    {
-      icon: Users,
-      value: "500+",
-      label: "Active Students",
-      color: "text-palette-700",
-    },
-    {
-      icon: BookOpen,
-      value: "50+",
-      label: "Modules",
-      color: "text-palette-800",
-    },
-    {
-      icon: GraduationCap,
-      value: "8",
-      label: "Semesters",
-      color: "text-palette-900",
-    },
-  ];
+  // Dynamic statistics data based on real database data
+  const getStats = () => {
+    if (!dashboardStats) {
+      // Fallback stats while loading or if API fails
+      return [
+        {
+          icon: GraduationCap,
+          value: "0",
+          label: "Semesters",
+          color: "text-palette-900",
+        },
+        {
+          icon: BookOpen,
+          value: "0",
+          label: "Modules",
+          color: "text-palette-800",
+        },
+
+        {
+          icon: Activity,
+          value: "0",
+          label: "Ongoing Assignments",
+          color: "text-orange-600",
+        },
+        {
+          icon: Calendar,
+          value: "0",
+          label: "Total Exams",
+          color: "text-yellow-600",
+        },
+      ];
+    }
+
+    return [
+      {
+        icon: GraduationCap,
+        value: dashboardStats.totalSemesters.toString(),
+        label: "Semesters",
+        color: "text-palette-900",
+      },
+      {
+        icon: BookOpen,
+        value: dashboardStats.totalModules.toString(),
+        label: "Modules",
+        color: "text-palette-800",
+      },
+      {
+        icon: Activity,
+        value: dashboardStats.ongoingAssignments.toString(),
+        label: "Ongoing Assignments",
+        color: "text-orange-900",
+      },
+      {
+        icon: Calendar,
+        value: dashboardStats.totalExams.toString(),
+        label: "Total Exams",
+        color: "text-red-600",
+      },
+    ];
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-palette-100 to-palette-300 animate-fade-in">
       <div className="relative w-full h-[600px] flex items-center justify-center">
-                {/* Graduation hat background image */}
-                <div 
-                  className="absolute inset-0 w-full h-full bg-cover bg-center opacity-9
+       
+        <div
+          className="absolute inset-0 w-full h-full bg-cover bg-center opacity-9
                   0"
-                  style={{ 
-                    backgroundImage: `url(${graduationHatImg})`,
-                    filter: 'blur(2px)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
-                  }}
-                />
-                <div className="relative z-10 text-center px-4">
-                  <h1 className="text-5xl md:text-7xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-palette-800 to-palette-900 animate-fade-in-up animation-delay-200">
-                    Welcome to Mi_Notes
-                  </h1>
-                  <p className="text-xl md:text-2xl mb-12 text-palette-700 animate-fade-in-up animation-delay-400">
-                    Share and access study materials with your peers
-                  </p>
-                </div>
-              </div>
+          style={{
+            backgroundImage: `url(${graduationHatImg})`,
+            filter: "blur(2px)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <div className="relative z-10 text-center px-4">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-palette-800 to-palette-900 animate-fade-in-up animation-delay-200">
+            Welcome to Mi_Notes
+          </h1>
+          <p className="text-xl md:text-2xl mb-12 text-palette-700 italic animate-fade-in-up animation-delay-400">
+            "Rise a little each day, and soon you'll shine"
+          </p>
+        </div>
+      </div>
       <div className="relative overflow-hidden bg-gradient-to-r from-palette-300 to-palette-400">
         <div className="absolute inset-0 bg-gradient-to-br from-palette-100/20 to-palette-300/40"></div>
         <div className="relative container mx-auto px-4 py-20 animate-fade-in-up">
@@ -100,31 +154,40 @@ const Home: React.FC = () => {
                 <BookOpen className="h-16 w-16 text-palette-pink animate-float" />
                 <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-palette-peach animate-pulse" />
               </div> */}
-              
             </div>
 
+            {/* Main Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16">
-              {stats.map((stat, index) => (
-                <div
-                  key={index}
-                  className={`text-center card-hover-effect group animate-bounce-in animation-delay-${
-                    index * 200
-                  }`}
-                >
-                  <div className="relative mb-4">
-                    <stat.icon
-                      className={`h-16 w-16 mx-auto ${stat.color} group-hover:scale-110 transition-transform duration-300 animate-float-rotate`}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-br from-palette-400/20 to-palette-600/20 rounded-full scale-0 group-hover:scale-100 transition-transform duration-500"></div>
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold mb-2 text-palette-900">
-                    {stat.value}
-                  </div>
-                  <div className="text-sm text-palette-700 group-hover:text-palette-900 transition-colors duration-300">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
+              {statsLoading
+                ? // Loading skeleton for stats
+                  [...Array(4)].map((_, index) => (
+                    <div key={index} className="text-center animate-pulse">
+                      <div className="h-16 w-16 mx-auto bg-palette-300 rounded-full mb-4"></div>
+                      <div className="h-8 bg-palette-300 rounded mb-2 w-16 mx-auto"></div>
+                      <div className="h-4 bg-palette-300 rounded w-24 mx-auto"></div>
+                    </div>
+                  ))
+                : getStats().map((stat, index) => (
+                    <div
+                      key={index}
+                      className={`text-center card-hover-effect group animate-bounce-in animation-delay-${
+                        index * 200
+                      }`}
+                    >
+                      <div className="relative mb-4">
+                        <stat.icon
+                          className={`h-16 w-16 mx-auto ${stat.color} group-hover:scale-110 transition-transform duration-300 animate-float-rotate`}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-br from-palette-400/20 to-palette-600/20 rounded-full scale-0 group-hover:scale-100 transition-transform duration-500"></div>
+                      </div>
+                      <div className="text-3xl md:text-4xl font-bold mb-2 text-palette-900">
+                        {stat.value}
+                      </div>
+                      <div className="text-sm text-palette-700 group-hover:text-palette-900 transition-colors duration-300">
+                        {stat.label}
+                      </div>
+                    </div>
+                  ))}
             </div>
 
             <div className="mt-16 flex flex-col sm:flex-row gap-4 justify-center">
@@ -147,9 +210,12 @@ const Home: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-4 py-12">
+        {/* Study Timer Widget */}
+        <StudyTimer />
+        
         {/* Exam Calendar Widget */}
         <ExamCalendar />
-        
+
         <div className="mb-12 animate-fade-in-up">
           <h2 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-palette-700 to-palette-900 text-center">
             Select Semester
@@ -253,7 +319,7 @@ const Home: React.FC = () => {
             </div>
           )}
         </div>
-        
+
         {/* Assignments Widget */}
         <AssignmentsWidget />
       </div>
