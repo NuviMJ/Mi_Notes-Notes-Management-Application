@@ -73,6 +73,7 @@ const moduleRoutes = require("./routes/modules");
 const noteRoutes = require("./routes/notes");
 const examRoutes = require("./routes/exams");
 const assignmentRoutes = require("./routes/assignments");
+const dashboardRoutes = require("./routes/dashboard");
 
 // API Routes
 app.use("/api/auth", authRoutes(db));
@@ -80,6 +81,7 @@ app.use("/api/modules", moduleRoutes(db));
 app.use("/api/notes", noteRoutes(db));
 app.use("/api/exams", examRoutes(db));
 app.use("/api/assignments", assignmentRoutes(db));
+app.use("/api/dashboard", dashboardRoutes(db));
 
 // Legacy route for semesters (keeping for backward compatibility)
 app.get("/api/semesters", (req, res) => {

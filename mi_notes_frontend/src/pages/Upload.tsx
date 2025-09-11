@@ -1,20 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { moduleService, noteService } from '../services/api';
-import type { Module } from '../types/index';
-import { AlertCircle, CheckCircle, File, Upload as UploadIcon, X, Sparkles, Plus } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { moduleService, noteService } from "../services/api";
+import type { Module } from "../types/index";
+import {
+  AlertCircle,
+  CheckCircle,
+  File,
+  Upload as UploadIcon,
+  X,
+  Sparkles,
+  Plus,
+} from "lucide-react";
 
 const Upload: React.FC = () => {
   const navigate = useNavigate();
   const [modules, setModules] = useState<Module[]>([]);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [moduleId, setModuleId] = useState('');
-  const [tags, setTags] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [moduleId, setModuleId] = useState("");
+  const [tags, setTags] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string>('');
+  const [filePreview, setFilePreview] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -23,41 +31,44 @@ const Upload: React.FC = () => {
 
   useEffect(() => {
     if (file) {
-      if (file.type.startsWith('image/')) {
+      if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onloadend = () => {
           setFilePreview(reader.result as string);
         };
         reader.readAsDataURL(file);
       } else {
-        setFilePreview('');
+        setFilePreview("");
       }
     } else {
-      setFilePreview('');
+      setFilePreview("");
     }
   }, [file]);
 
   const loadModules = async () => {
     try {
-      console.log('Fetching modules...');
-      const token = localStorage.getItem('token');
-      console.log('Auth token present:', !!token);
-      
+      console.log("Fetching modules...");
+      const token = localStorage.getItem("token");
+      console.log("Auth token present:", !!token);
+
       const data = await moduleService.getAllModules();
-      console.log('Modules fetched:', data);
-      console.log('Number of modules:', data?.length);
+      console.log("Modules fetched:", data);
+      console.log("Number of modules:", data?.length);
       if (data && data.length > 0) {
-        console.log('First module structure:', data[0]);
+        console.log("First module structure:", data[0]);
       }
       setModules(data || []);
     } catch (err: any) {
-      console.error('Failed to load modules - Full error:', err);
-      console.error('Error response:', err.response);
-      console.error('Error status:', err.response?.status);
-      console.error('Error data:', err.response?.data);
-      
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to load modules. Please check if the backend is running.';
-      setError(`Error ${err.response?.status || ''}: ${errorMessage}`);
+      console.error("Failed to load modules - Full error:", err);
+      console.error("Error response:", err.response);
+      console.error("Error status:", err.response?.status);
+      console.error("Error data:", err.response?.data);
+
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Failed to load modules. Please check if the backend is running.";
+      setError(`Error ${err.response?.status || ""}: ${errorMessage}`);
     }
   };
 
@@ -66,32 +77,32 @@ const Upload: React.FC = () => {
     if (selectedFile) {
       const maxSize = 10 * 1024 * 1024; // 10MB
       if (selectedFile.size > maxSize) {
-        setError('File size must be less than 10MB');
+        setError("File size must be less than 10MB");
         return;
       }
       setFile(selectedFile);
-      setError('');
+      setError("");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setSuccess(false);
 
     if (!file) {
-      setError('Please select a file to upload');
+      setError("Please select a file to upload");
       return;
     }
 
     setIsLoading(true);
 
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('moduleId', moduleId);
-    formData.append('tags', tags);
+    formData.append("file", file);
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("moduleId", moduleId);
+    formData.append("tags", tags);
 
     try {
       await noteService.uploadNote(formData);
@@ -100,7 +111,10 @@ const Upload: React.FC = () => {
         navigate(`/modules/${moduleId}/notes`);
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to upload note. Please try again.');
+      setError(
+        err.response?.data?.message ||
+          "Failed to upload note. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -108,15 +122,15 @@ const Upload: React.FC = () => {
 
   const removeFile = () => {
     setFile(null);
-    setFilePreview('');
+    setFilePreview("");
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
   return (
@@ -130,8 +144,12 @@ const Upload: React.FC = () => {
                 <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-palette-500 animate-pulse" />
               </div>
             </div>
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-palette-700 to-palette-900 mb-4">Upload Study Note</h1>
-            <p className="text-palette-600 text-lg">Share your knowledge with fellow students</p>
+            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-palette-700 to-palette-900 mb-4">
+              Upload Study Note
+            </h1>
+            <p className="text-palette-600 text-lg">
+              Share your knowledge with fellow students
+            </p>
           </div>
 
           {error && (
@@ -156,14 +174,19 @@ const Upload: React.FC = () => {
             <div className="mb-8 bg-green-50 border border-green-300 text-green-700 px-6 py-4 rounded-lg animate-bounce-in">
               <div className="flex items-center">
                 <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0 animate-pulse" />
-                <span className="text-green-700 font-medium">Note uploaded successfully! Redirecting...</span>
+                <span className="text-green-700 font-medium">
+                  Note uploaded successfully! Redirecting...
+                </span>
               </div>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="animate-fade-in-up animation-delay-200">
-              <label htmlFor="title" className="block text-sm font-semibold text-palette-700 mb-3">
+              <label
+                htmlFor="title"
+                className="block text-sm font-semibold text-palette-700 mb-3"
+              >
                 Title *
               </label>
               <input
@@ -178,7 +201,10 @@ const Upload: React.FC = () => {
             </div>
 
             <div className="animate-fade-in-up animation-delay-400">
-              <label htmlFor="module" className="block text-sm font-semibold text-palette-700 mb-3">
+              <label
+                htmlFor="module"
+                className="block text-sm font-semibold text-palette-700 mb-3"
+              >
                 Module *
               </label>
               <select
@@ -189,26 +215,37 @@ const Upload: React.FC = () => {
                 className="w-full px-4 py-3 border border-palette-300 rounded-lg bg-palette-100/50 text-palette-800 focus:border-palette-600 focus:ring-2 focus:ring-palette-400/20 transition-all duration-300"
               >
                 <option value="" className="text-palette-500">
-                  {modules.length === 0 ? 'No modules available' : 'Select a module'}
+                  {modules.length === 0
+                    ? "No modules available"
+                    : "Select a module"}
                 </option>
                 {modules.map((module) => (
-                  <option key={module.id} value={module.id} className="text-palette-800">
-                    {module.name} {module.code ? `(${module.code})` : ''} - Semester {module.semester}
+                  <option
+                    key={module.id}
+                    value={module.id}
+                    className="text-palette-800"
+                  >
+                    {module.name} {module.code ? `(${module.code})` : ""} -
+                    Semester {module.semester}
                   </option>
                 ))}
               </select>
               {modules.length === 0 && (
-                <p className="mt-2 text-sm text-red-600">No modules found. Please check the backend connection.</p>
+                <p className="mt-2 text-sm text-red-600">
+                  No modules found. Please check the backend connection.
+                </p>
               )}
             </div>
 
             <div className="animate-fade-in-up animation-delay-600">
-              <label htmlFor="description" className="block text-sm font-semibold text-palette-700 mb-3">
-                Description *
+              <label
+                htmlFor="description"
+                className="block text-sm font-semibold text-palette-700 mb-3"
+              >
+                Description
               </label>
               <textarea
                 id="description"
-                required
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
@@ -218,7 +255,10 @@ const Upload: React.FC = () => {
             </div>
 
             <div className="animate-fade-in-up animation-delay-800">
-              <label htmlFor="tags" className="block text-sm font-semibold text-palette-700 mb-3">
+              <label
+                htmlFor="tags"
+                className="block text-sm font-semibold text-palette-700 mb-3"
+              >
                 Tags
               </label>
               <input
@@ -229,14 +269,16 @@ const Upload: React.FC = () => {
                 className="w-full px-4 py-3 border border-palette-300 rounded-lg bg-palette-100/50 text-palette-800 placeholder-palette-500 focus:border-palette-600 focus:ring-2 focus:ring-palette-400/20 transition-all duration-300"
                 placeholder="e.g., midterm, assignment, lecture (comma separated)"
               />
-              <p className="mt-2 text-sm text-palette-600">Separate tags with commas</p>
+              <p className="mt-2 text-sm text-palette-600">
+                Separate tags with commas
+              </p>
             </div>
 
             <div className="animate-fade-in-up animation-delay-1000">
               <label className="block text-sm font-semibold text-palette-700 mb-3">
                 File *
               </label>
-              
+
               {!file ? (
                 <div className="border-2 border-dashed border-palette-400 rounded-xl p-12 bg-palette-100/30 group hover:border-palette-600 hover:bg-palette-100/50 transition-all duration-300">
                   <input
@@ -254,8 +296,12 @@ const Upload: React.FC = () => {
                       <UploadIcon className="h-16 w-16 text-palette-600 group-hover:scale-110 transition-transform duration-300 animate-float" />
                       <Plus className="absolute -bottom-1 -right-1 h-6 w-6 text-palette-500 animate-pulse" />
                     </div>
-                    <span className="text-palette-800 font-semibold text-lg mb-2 group-hover:text-palette-900 transition-colors duration-300">Click to upload</span>
-                    <span className="text-palette-600 text-base mb-4">or drag and drop</span>
+                    <span className="text-palette-800 font-semibold text-lg mb-2 group-hover:text-palette-900 transition-colors duration-300">
+                      Click to upload
+                    </span>
+                    <span className="text-palette-600 text-base mb-4">
+                      or drag and drop
+                    </span>
                     <span className="text-palette-500 text-sm bg-palette-200/50 px-4 py-2 rounded-full">
                       PDF, DOC, DOCX, PPT, PPTX, TXT, PNG, JPG (max 10MB)
                     </span>
@@ -270,7 +316,9 @@ const Upload: React.FC = () => {
                         <CheckCircle className="absolute -top-1 -right-1 h-4 w-4 text-green-500 animate-pulse" />
                       </div>
                       <div>
-                        <p className="text-lg font-semibold text-palette-800">{file.name}</p>
+                        <p className="text-lg font-semibold text-palette-800">
+                          {file.name}
+                        </p>
                         <p className="text-sm text-palette-600">
                           {formatFileSize(file.size)}
                         </p>
@@ -284,10 +332,12 @@ const Upload: React.FC = () => {
                       <X className="h-6 w-6 group-hover:animate-bounce" />
                     </button>
                   </div>
-                  
+
                   {filePreview && (
                     <div className="mt-6">
-                      <p className="text-sm font-semibold text-palette-700 mb-3">Preview:</p>
+                      <p className="text-sm font-semibold text-palette-700 mb-3">
+                        Preview:
+                      </p>
                       <img
                         src={filePreview}
                         alt="File preview"
@@ -319,7 +369,7 @@ const Upload: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/')}
+                onClick={() => navigate("/")}
                 className="bg-palette-200 text-palette-700 border-2 border-palette-300 px-8 py-4 rounded-xl font-semibold hover:bg-palette-300 hover:border-palette-400 transform hover:scale-105 transition-all duration-300 flex-1 text-lg group"
               >
                 <X className="h-6 w-6 mr-3 inline group-hover:animate-bounce" />
@@ -334,4 +384,3 @@ const Upload: React.FC = () => {
 };
 
 export default Upload;
-

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthResponse, LoginCredentials, Module, Note, RegisterData, User, Exam, CreateExamData, Assignment, CreateAssignmentData } from '../types/index';
+import type { AuthResponse, LoginCredentials, Module, Note, RegisterData, User, Exam, CreateExamData, Assignment, CreateAssignmentData, DashboardStats, SemesterStats } from '../types/index';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -198,6 +198,18 @@ export const assignmentService = {
   
   deleteDocument: async (assignmentId: number, docId: number): Promise<void> => {
     await api.delete(`/assignments/${assignmentId}/document/${docId}`);
+  },
+};
+
+export const dashboardService = {
+  getStats: async (): Promise<DashboardStats> => {
+    const response = await api.get('/dashboard/stats');
+    return response.data;
+  },
+  
+  getSemesterStats: async (semesterId: number): Promise<SemesterStats> => {
+    const response = await api.get(`/dashboard/stats/semester/${semesterId}`);
+    return response.data;
   },
 };
 
