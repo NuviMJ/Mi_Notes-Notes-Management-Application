@@ -12,7 +12,8 @@ import {
   Eye,
   Plus,
   FolderOpen,
-  X
+  X,
+  DeleteIcon
 } from 'lucide-react';
 import { assignmentService, moduleService } from '../services/api';
 import type { Assignment, Module } from '../types';
@@ -25,6 +26,7 @@ const AssignmentsWidget: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ show: boolean; assignment: Assignment | null }>({ show: false, assignment: null });
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state for new assignment
@@ -127,6 +129,41 @@ const AssignmentsWidget: React.FC = () => {
     } catch (err) {
       console.error('Failed to update assignment:', err);
       alert('Failed to complete assignment. Please try again.');
+    }
+  };
+
+  const handleReactivateAssignment = async (assignmentId: number) => {
+    try {
+      await assignmentService.updateAssignment(assignmentId, { status: 'Ongoing' });
+      
+      // Update local state
+      setAssignments(prev => prev.map(assignment => {
+        if (assignment.assignment_id === assignmentId) {
+          return {
+            ...assignment,
+            status: 'Ongoing' as const
+          };
+        }
+        return assignment;
+      }));
+    } catch (err) {
+      console.error('Failed to reactivate assignment:', err);
+      alert('Failed to reactivate assignment. Please try again.');
+    }
+  };
+
+  const handleDeleteAssignment = async () => {
+    if (!deleteConfirmModal.assignment) return;
+    
+    try {
+      await assignmentService.deleteAssignment(deleteConfirmModal.assignment.assignment_id);
+      
+      // Update local state
+      setAssignments(prev => prev.filter(a => a.assignment_id !== deleteConfirmModal.assignment?.assignment_id));
+      setDeleteConfirmModal({ show: false, assignment: null });
+    } catch (err) {
+      console.error('Failed to delete assignment:', err);
+      alert('Failed to delete assignment. Please try again.');
     }
   };
 
@@ -259,7 +296,7 @@ const AssignmentsWidget: React.FC = () => {
                         className="p-2 hover:bg-red-100 rounded-lg transition-colors"
                         title="Delete file"
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <DeleteIcon className="h-4 w-4 text-red-500" />
                       </button>
                     )}
                   </div>
@@ -315,17 +352,40 @@ const AssignmentsWidget: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        {assignment.status !== 'Complete' && assignment.documents.length > 0 && (
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={() => handleCompleteAssignment(assignment.assignment_id)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <CheckCircle className="h-4 w-4" />
-              Mark as Complete
-            </button>
+        <div className="mt-4 flex justify-between">
+          <button
+            onClick={() => setDeleteConfirmModal({ show: true, assignment })}
+            className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+            title="Delete Assignment"
+          >
+            <Trash2 className="h-4 w-4 text-red-500" />
+            
+          </button>
+          
+          <div className="flex gap-2">
+            {assignment.status === 'Complete' ? (
+              <button
+                onClick={() => handleReactivateAssignment(assignment.assignment_id)}
+                //className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                className='px-4 py-2 text-orange-700 hover:bg-orange-100 rounded-lg transition-colors'
+                title="Move back to Ongoing"
+              >
+                <Clock className="h-4 w-4" />
+               
+              </button>
+            ) : (
+              assignment.documents.length > 0 && (
+                <button
+                  onClick={() => handleCompleteAssignment(assignment.assignment_id)}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Mark as Complete
+                </button>
+              )
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   };
@@ -521,6 +581,56 @@ const AssignmentsWidget: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal.show && deleteConfirmModal.assignment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-palette-800">Delete Assignment</h3>
+              <button
+                onClick={() => setDeleteConfirmModal({ show: false, assignment: null })}
+                className="p-1 hover:bg-palette-100 rounded"
+              >
+                <X className="h-5 w-5 text-palette-600" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-palette-700 mb-4">
+                Are you sure you want to delete this assignment?
+              </p>
+              <div className="bg-palette-100 p-4 rounded-lg">
+                <p className="font-semibold text-palette-800">{deleteConfirmModal.assignment.title}</p>
+                <p className="text-sm text-palette-600 mt-1">
+                  {deleteConfirmModal.assignment.module_name} ({deleteConfirmModal.assignment.module_code})
+                </p>
+                <p className="text-sm text-palette-600 mt-1">
+                  {deleteConfirmModal.assignment.documents.length} document(s) attached
+                </p>
+              </div>
+              <p className="text-red-600 text-sm mt-4">
+                ⚠️ This action cannot be undone. All associated documents will also be deleted.
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteAssignment}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete Assignment
+              </button>
+              <button
+                onClick={() => setDeleteConfirmModal({ show: false, assignment: null })}
+                className="flex-1 px-4 py-2 bg-palette-200 text-palette-700 rounded-lg hover:bg-palette-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import Upload from './pages/Upload';
 import NotesList from './pages/NotesList';
 import Search from './pages/Search';
+import PublicNote from './pages/PublicNote';
 import './index.css'
 
 function AppContent() {
@@ -28,6 +29,7 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/note/:noteId" element={<PublicNote />} />
             <Route
               path="/"
               element={
