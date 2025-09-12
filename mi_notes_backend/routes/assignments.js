@@ -25,14 +25,31 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /pdf|doc|docx|txt|ppt|pptx|xls|xlsx|zip|rar/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    const allowedExtensions = /\.(pdf|doc|docx|txt|ppt|pptx|xls|xlsx|zip|rar)$/i;
+    const extname = allowedExtensions.test(file.originalname);
     
-    if (extname) {
+    // Define allowed MIME types for better validation
+    const allowedMimeTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/zip',
+      'application/x-zip-compressed',
+      'application/x-rar-compressed',
+      'application/vnd.rar'
+    ];
+    
+    const mimetypeValid = allowedMimeTypes.includes(file.mimetype);
+    
+    if (extname || mimetypeValid) {
       return cb(null, true);
     } else {
-      cb(new Error('Invalid file type'));
+      cb(new Error('Invalid file type. Allowed types: PDF, DOC, DOCX, TXT, PPT, PPTX, XLS, XLSX, ZIP, RAR'));
     }
   }
 });

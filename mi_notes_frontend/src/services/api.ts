@@ -114,12 +114,26 @@ export const noteService = {
     return response.data;
   },
   
+  getPublicNote: async (id: string): Promise<Note> => {
+    const response = await api.get(`/notes/public/${id}`);
+    return response.data;
+  },
+  
   filterNotes: async (filters: {
     semester?: number;
     moduleId?: string;
     tags?: string[];
   }): Promise<Note[]> => {
     const response = await api.get('/notes/filter', { params: filters });
+    return response.data;
+  },
+  
+  deleteNote: async (id: string): Promise<void> => {
+    await api.delete(`/notes/${id}`);
+  },
+  
+  updateNote: async (id: string, data: Partial<Note>): Promise<Note> => {
+    const response = await api.put(`/notes/${id}`, data);
     return response.data;
   },
 };

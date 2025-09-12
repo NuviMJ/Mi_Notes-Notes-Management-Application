@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { noteService } from '../services/api';
 import type { Note } from '../types/index';
-import { Calendar, Download, FileText, Search as SearchIcon, Tag, User, Filter, X, Sparkles } from 'lucide-react';
+import { Calendar, Download, FileText, Search as SearchIcon, Tag, User, Filter, X, Sparkles, Share2, Edit, Trash2 } from 'lucide-react';
 
 const Search: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -15,6 +15,10 @@ const Search: React.FC = () => {
   const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [noteToEdit, setNoteToEdit] = useState<Note | null>(null);
 
   useEffect(() => {
     if (query) {
@@ -69,6 +73,55 @@ const Search: React.FC = () => {
     } catch (err) {
       console.error('Failed to download note:', err);
     }
+  };
+
+  const handleWhatsAppShare = (note: Note) => {
+    const shareUrl = `${window.location.origin}/note/${note.id}`;
+    const message = `📚 *${note.title}*\n\n${note.description}\n\n📖 Module: ${note.moduleName}\n🎓 Semester: ${note.semester}\n👤 Uploaded by: ${note.uploadedBy.name}\n📄 File: ${note.fileName || 'Document'}\n\n✅ *Click to Download:*\n${shareUrl}\n\n_Shared from Mi Notes - Your Study Companion_`;
+    
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleDeleteClick = (note: Note) => {
+    setNoteToDelete(note);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!noteToDelete) return;
+    
+    try {
+      await noteService.deleteNote(noteToDelete.id);
+      setNotes(notes.filter(n => n.id !== noteToDelete.id));
+      setDeleteModalOpen(false);
+      setNoteToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete note:', err);
+    }
+  };
+
+  const handleEditClick = (note: Note) => {
+    setNoteToEdit(note);
+    setEditModalOpen(true);
+  };
+
+  const handleEditSave = async (updatedNote: Partial<Note>) => {
+    if (!noteToEdit) return;
+    
+    try {
+      const updated = await noteService.updateNote(noteToEdit.id, updatedNote);
+      setNotes(notes.map(n => n.id === noteToEdit.id ? updated : n));
+      setEditModalOpen(false);
+      setNoteToEdit(null);
+    } catch (err) {
+      console.error('Failed to update note:', err);
+    }
+  };
+
+  const getCurrentUser = () => {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
   };
 
   const getAllTags = (): string[] => {
@@ -304,13 +357,43 @@ const Search: React.FC = () => {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleDownload(note.id)}
-                        className="bg-gradient-to-r from-palette-700 to-palette-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ml-6 group/btn"
-                      >
-                        <Download className="h-5 w-5 mr-2 group-hover/btn:animate-bounce" />
-                        Download
-                      </button>
+                      <div className="flex flex-col gap-4 ml-6">
+                        <button
+                          onClick={() => handleDownload(note.id)}
+                          className="bg-gradient-to-r from-palette-700 to-palette-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 group/btn"
+                        >
+                          <Download className="h-5 w-5 mr-2 group-hover/btn:animate-bounce" />
+                          Download
+                        </button>
+                        
+                        <div className="flex gap-4 justify-center">
+                          {getCurrentUser()?.id === note.uploadedBy.id && (
+                            <>
+                              <button
+                                onClick={() => handleEditClick(note)}
+                                className="p-2 hover:bg-palette-100 rounded-lg transition-all duration-300 group/btn"
+                                title="Edit Note"
+                              >
+                                <Edit className="h-5 w-5 text-blue-600 group-hover/btn:animate-bounce" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(note)}
+                                className="p-2 hover:bg-palette-100 rounded-lg transition-all duration-300 group/btn"
+                                title="Delete Note"
+                              >
+                                <Trash2 className="h-5 w-5 text-red-600 group-hover/btn:animate-bounce" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleWhatsAppShare(note)}
+                            className="p-2 hover:bg-palette-100 rounded-lg transition-all duration-300 group/btn"
+                            title="Share on WhatsApp"
+                          >
+                            <Share2 className="h-5 w-5 text-green-600 group-hover/btn:animate-bounce" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -339,6 +422,89 @@ const Search: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && noteToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-palette-white rounded-xl shadow-2xl max-w-md w-full p-8 animate-bounce-in">
+            <h3 className="text-2xl font-bold text-palette-800 mb-4">Delete Note</h3>
+            <p className="text-palette-600 mb-6">
+              Are you sure you want to delete "<strong>{noteToDelete.title}</strong>"? This action cannot be undone.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setDeleteModalOpen(false)}
+                className="flex-1 bg-palette-200 text-palette-700 px-6 py-3 rounded-xl font-semibold hover:bg-palette-300 transition-all duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 bg-gradient-to-r from-red-600 to-red-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editModalOpen && noteToEdit && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-palette-white rounded-xl shadow-2xl max-w-2xl w-full p-8 animate-bounce-in">
+            <h3 className="text-2xl font-bold text-palette-800 mb-6">Edit Note</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              handleEditSave({
+                title: formData.get('title') as string,
+                description: formData.get('description') as string,
+              });
+            }}>
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-palette-700 mb-2">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  defaultValue={noteToEdit.title}
+                  className="w-full px-4 py-3 border border-palette-300 rounded-lg bg-palette-100/50 text-palette-800 focus:border-palette-600 focus:ring-2 focus:ring-palette-400/20"
+                  required
+                />
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-palette-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  defaultValue={noteToEdit.description}
+                  rows={4}
+                  className="w-full px-4 py-3 border border-palette-300 rounded-lg bg-palette-100/50 text-palette-800 focus:border-palette-600 focus:ring-2 focus:ring-palette-400/20"
+                  required
+                />
+              </div>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setEditModalOpen(false)}
+                  className="flex-1 bg-palette-200 text-palette-700 px-6 py-3 rounded-xl font-semibold hover:bg-palette-300 transition-all duration-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-palette-700 to-palette-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

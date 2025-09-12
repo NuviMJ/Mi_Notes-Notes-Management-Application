@@ -127,6 +127,114 @@ module.exports = (db) => {
     });
   });
 
+  // Search notes - MUST come before /:id route
+  router.get('/search', optionalAuth, (req, res) => {
+    const searchQuery = req.query.q;
+
+    if (!searchQuery) {
+      return res.status(400).json({ message: 'Please provide a search query' });
+    }
+
+    const query = `
+      SELECT 
+        n.*,
+        u.name as uploaderName,
+        u.email as uploaderEmail,
+        m.module_name as moduleName,
+        m.code as moduleCode,
+        m.semester_id
+      FROM notes n
+      JOIN users u ON n.user_id = u.id
+      JOIN modules m ON n.module_id = m.id
+      WHERE n.title LIKE ? OR n.description LIKE ? OR m.module_name LIKE ?
+      ORDER BY n.upload_date DESC
+    `;
+
+    const searchPattern = `%${searchQuery}%`;
+    
+    db.query(query, [searchPattern, searchPattern, searchPattern], (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
+      
+      const notes = results.map(note => ({
+        id: note.id.toString(),
+        title: note.title,
+        description: note.description,
+        moduleId: note.module_id.toString(),
+        moduleName: note.moduleName,
+        moduleCode: note.moduleCode,
+        semester: note.semester_id,
+        fileUrl: note.file_url,
+        fileName: note.title,
+        fileSize: 0, // Default since not stored in DB
+        uploadedBy: {
+          id: note.user_id.toString(),
+          name: note.uploaderName,
+          email: note.uploaderEmail
+        },
+        uploadedAt: note.upload_date,
+        downloads: 0, // Default since not stored in DB
+        tags: [] // Default since not stored in DB
+      }));
+      
+      res.json(notes);
+    });
+  });
+
+  // Get public note (no auth required)
+  router.get('/public/:id', (req, res) => {
+    const noteId = req.params.id;
+    
+    const query = `
+      SELECT 
+        n.*,
+        u.name as uploaderName,
+        u.email as uploaderEmail,
+        m.module_name as moduleName,
+        m.code as moduleCode,
+        m.semester_id
+      FROM notes n
+      JOIN users u ON n.user_id = u.id
+      JOIN modules m ON n.module_id = m.id
+      WHERE n.id = ?
+    `;
+    
+    db.query(query, [noteId], (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
+      
+      if (results.length === 0) {
+        return res.status(404).json({ message: 'Note not found' });
+      }
+      
+      const note = results[0];
+      res.json({
+        id: note.id.toString(),
+        title: note.title,
+        description: note.description,
+        moduleId: note.module_id.toString(),
+        moduleName: note.moduleName,
+        moduleCode: note.moduleCode,
+        semester: note.semester_id,
+        fileUrl: note.file_url,
+        fileName: note.title,
+        fileSize: 0, // Default since not stored in DB
+        uploadedBy: {
+          id: note.user_id.toString(),
+          name: note.uploaderName,
+          email: note.uploaderEmail
+        },
+        uploadedAt: note.upload_date,
+        downloads: 0, // Default since not stored in DB
+        tags: [] // Default since not stored in DB
+      });
+    });
+  });
+
   // Get single note by ID
   router.get('/:id', optionalAuth, (req, res) => {
     const noteId = req.params.id;
@@ -287,56 +395,140 @@ module.exports = (db) => {
     );
   });
 
-  // Search notes
-  router.get('/search', optionalAuth, (req, res) => {
-    const searchQuery = req.query.q;
 
-    if (!searchQuery) {
-      return res.status(400).json({ message: 'Please provide a search query' });
-    }
+  // Update note
+  router.put('/:id', authMiddleware, (req, res) => {
+    const noteId = req.params.id;
+    const { title, description } = req.body;
+    const userId = req.user.id;
 
-    const query = `
-      SELECT 
-        n.*,
-        u.name as uploaderName,
-        u.email as uploaderEmail,
-        m.module_name as moduleName,
-        m.code as moduleCode,
-        m.semester_id
-      FROM notes n
-      JOIN users u ON n.user_id = u.id
-      JOIN modules m ON n.module_id = m.id
-      WHERE n.title LIKE ? OR n.description LIKE ? OR m.module_name LIKE ?
-      ORDER BY n.upload_date DESC
-    `;
+    // First check if the note belongs to the user
+    db.query(
+      'SELECT user_id FROM notes WHERE id = ?',
+      [noteId],
+      (err, results) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({ message: 'Server error' });
+        }
 
-    const searchPattern = `%${searchQuery}%`;
-    
-    db.query(query, [searchPattern, searchPattern, searchPattern], (err, results) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({ message: 'Server error' });
+        if (results.length === 0) {
+          return res.status(404).json({ message: 'Note not found' });
+        }
+
+        if (results[0].user_id !== userId) {
+          return res.status(403).json({ message: 'Unauthorized to update this note' });
+        }
+
+        // Update the note
+        db.query(
+          'UPDATE notes SET title = ?, description = ? WHERE id = ?',
+          [title, description, noteId],
+          (err) => {
+            if (err) {
+              console.error('Error updating note:', err);
+              return res.status(500).json({ message: 'Server error' });
+            }
+
+            // Return updated note
+            const query = `
+              SELECT 
+                n.*,
+                u.name as uploaderName,
+                u.email as uploaderEmail,
+                m.module_name as moduleName,
+                m.code as moduleCode,
+                m.semester_id
+              FROM notes n
+              JOIN users u ON n.user_id = u.id
+              JOIN modules m ON n.module_id = m.id
+              WHERE n.id = ?
+            `;
+
+            db.query(query, [noteId], (err, results) => {
+              if (err || results.length === 0) {
+                return res.status(500).json({ message: 'Server error' });
+              }
+
+              const note = results[0];
+              res.json({
+                id: note.id.toString(),
+                title: note.title,
+                description: note.description,
+                moduleId: note.module_id.toString(),
+                moduleName: note.moduleName,
+                moduleCode: note.moduleCode,
+                semester: note.semester_id,
+                fileUrl: note.file_url,
+                fileName: note.title,
+                fileSize: 0,
+                uploadedBy: {
+                  id: note.user_id.toString(),
+                  name: note.uploaderName,
+                  email: note.uploaderEmail
+                },
+                uploadedAt: note.upload_date,
+                downloads: 0,
+                tags: []
+              });
+            });
+          }
+        );
       }
-      
-      const notes = results.map(note => ({
-        id: note.id.toString(),
-        title: note.title,
-        description: note.description,
-        moduleId: note.module_id.toString(),
-        moduleName: note.moduleName,
-        moduleCode: note.moduleCode,
-        semesterId: note.semester_id,
-        fileUrl: note.file_url,
-        uploadedBy: {
-          id: note.user_id.toString(),
-          name: note.uploaderName,
-          email: note.uploaderEmail
-        },
-        uploadDate: note.upload_date
-      }));
-      
-      res.json(notes);
-    });
+    );
+  });
+
+  // Delete note
+  router.delete('/:id', authMiddleware, (req, res) => {
+    const noteId = req.params.id;
+    const userId = req.user.id;
+
+    // First check if the note belongs to the user and get file path
+    db.query(
+      'SELECT user_id, file_url FROM notes WHERE id = ?',
+      [noteId],
+      (err, results) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({ message: 'Server error' });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ message: 'Note not found' });
+        }
+
+        if (results[0].user_id !== userId) {
+          return res.status(403).json({ message: 'Unauthorized to delete this note' });
+        }
+
+        const fileUrl = results[0].file_url;
+
+        // Delete from database
+        db.query(
+          'DELETE FROM notes WHERE id = ?',
+          [noteId],
+          (err) => {
+            if (err) {
+              console.error('Error deleting note:', err);
+              return res.status(500).json({ message: 'Server error' });
+            }
+
+            // Delete the file from storage
+            if (fileUrl) {
+              const filePath = path.join(__dirname, '..', fileUrl);
+              fs.unlink(filePath, (err) => {
+                if (err) {
+                  console.error('Error deleting file:', err);
+                  // Continue even if file deletion fails
+                }
+              });
+            }
+
+            res.json({ message: 'Note deleted successfully' });
+          }
+        );
+      }
+    );
   });
 
   // Filter notes
